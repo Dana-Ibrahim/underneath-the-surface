@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Underneath the Surface — Novel Tracker</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #222640;
+    --surface3: #2a2f52;
+    --accent: #7c6af7;
+    --accent2: #a78bfa;
+    --accent3: #c4b5fd;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --border: #2d3561;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .logo { font-size: 1.3rem; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent3)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .logo span { font-size: 0.75rem; display: block; color: var(--text2); -webkit-text-fill-color: var(--text2); font-weight: 400; margin-top: -2px; }
+  .save-indicator { font-size: 0.75rem; color: var(--success); display: flex; align-items: center; gap: 6px; }
+  .save-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* NAV */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; overflow-x: auto; gap: 0;
+    scrollbar-width: none;
+    position: sticky; top: 57px; z-index: 99;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    padding: 14px 20px; background: none; border: none; color: var(--text2);
+    cursor: pointer; font-size: 0.85rem; font-weight: 500; white-space: nowrap;
+    border-bottom: 2px solid transparent; transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-btn:hover { color: var(--text); background: var(--surface2); }
+  .nav-btn.active { color: var(--accent3); border-bottom-color: var(--accent); }
+  .nav-icon { font-size: 1rem; }
+
+  /* MAIN */
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .card-title { font-size: 1.1rem; font-weight: 600; color: var(--text); }
+  .section-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 20px; color: var(--accent3); display: flex; align-items: center; gap: 10px; }
+
+  /* BUTTONS */
+  .btn {
+    padding: 8px 16px; border-radius: var(--radius-sm); border: none;
+    cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface3); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+  .btn-icon { padding: 6px; border-radius: 6px; }
+
+  /* FORMS */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.78rem; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+  input, textarea, select {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.9rem;
+    transition: border-color 0.2s; font-family: inherit; width: 100%;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,106,247,0.15); }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--surface2); }
+
+  /* BADGES */
+  .badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .badge-protagonist { background: rgba(124,106,247,0.2); color: var(--accent3); border: 1px solid rgba(124,106,247,0.3); }
+  .badge-supporting { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+  .badge-antagonist { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .badge-minor { background: rgba(148,163,184,0.15); color: var(--text2); border: 1px solid rgba(148,163,184,0.2); }
+  .badge-not-started { background: rgba(148,163,184,0.1); color: var(--text3); border: 1px solid var(--border); }
+  .badge-in-progress { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-complete { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+  .badge-siblings { background: rgba(196,181,253,0.15); color: var(--accent3); }
+  .badge-romantic { background: rgba(251,113,133,0.15); color: #fb7185; }
+  .badge-friends { background: rgba(34,211,238,0.15); color: #22d3ee; }
+  .badge-best-friends { background: rgba(34,211,238,0.2); color: #67e8f9; }
+  .badge-enemies { background: rgba(239,68,68,0.15); color: #f87171; }
+  .badge-hostile-romantic { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .badge-mentor { background: rgba(250,204,21,0.15); color: #fde047; }
+  .badge-guardian { background: rgba(134,239,172,0.15); color: #86efac; }
+
+  /* CHARACTER GRID */
+  .char-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .char-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;
+  }
+  .char-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); border-color: var(--accent); }
+  .char-card-header { padding: 16px 16px 12px; display: flex; align-items: flex-start; gap: 12px; }
+  .char-avatar {
+    width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700;
+    flex-shrink: 0; color: white;
+  }
+  .char-info { flex: 1; min-width: 0; }
+  .char-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+  .char-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .char-age { font-size: 0.78rem; color: var(--text2); }
+  .char-body { padding: 0 16px 16px; }
+  .char-field { margin-bottom: 8px; }
+  .char-field-label { font-size: 0.7rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+  .char-field-value { font-size: 0.85rem; color: var(--text2); margin-top: 2px; line-height: 1.5; }
+  .char-actions { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+
+  /* RELATIONSHIPS */
+  .rel-list { display: flex; flex-direction: column; gap: 8px; }
+  .rel-item {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .rel-name { font-weight: 600; font-size: 0.9rem; }
+  .rel-notes { font-size: 0.8rem; color: var(--text2); flex: 1; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 20px; overflow-y: auto; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    width: 100%; max-width: 760px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    margin: auto;
+  }
+  .modal-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 1.2rem; font-weight: 700; }
+  .modal-body { padding: 24px; max-height: 75vh; overflow-y: auto; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  .close-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 1.4rem; padding: 4px; border-radius: 6px; transition: color 0.2s; }
+  .close-btn:hover { color: var(--text); }
+
+  /* TABS inside modal */
+  .modal-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin: -24px -24px 24px; padding: 0 24px; }
+  .modal-tab { padding: 12px 16px; background: none; border: none; color: var(--text2); cursor: pointer; font-size: 0.85rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .modal-tab.active { color: var(--accent3); border-bottom-color: var(--accent); }
+  .modal-tab:hover { color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* SECRETS */
+  .secrets-field { position: relative; }
+  .secrets-toggle { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text2); cursor: pointer; }
+  .secrets-input { padding-right: 40px !important; }
+
+  /* WORLDBUILDING */
+  .world-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .world-tab-btn {
+    padding: 10px 18px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); cursor: pointer; font-size: 0.85rem;
+    font-weight: 500; transition: all 0.2s;
+  }
+  .world-tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .world-tab-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+  .world-page { display: none; }
+  .world-page.active { display: block; }
+  .world-icon { font-size: 2rem; margin-bottom: 8px; }
+
+  /* TIMELINE */
+  .timeline { position: relative; }
+  .timeline-item {
+    display: flex; gap: 16px; margin-bottom: 20px; position: relative;
+  }
+  .timeline-marker {
+    display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+  }
+  .timeline-dot {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+    font-weight: 700; color: white; flex-shrink: 0; z-index: 1; box-shadow: 0 0 0 3px var(--bg);
+  }
+  .timeline-line { width: 2px; flex: 1; background: var(--border); margin-top: 4px; }
+  .timeline-content {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; flex: 1; min-width: 0;
+  }
+  .timeline-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .timeline-chapter { font-weight: 700; color: var(--accent3); font-size: 0.9rem; }
+  .timeline-day { font-size: 0.8rem; color: var(--text2); }
+  .timeline-summary { font-size: 0.9rem; line-height: 1.6; color: var(--text); margin-bottom: 8px; }
+  .timeline-chars { display: flex; gap: 6px; flex-wrap: wrap; }
+  .timeline-char-tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; color: var(--text2); }
+
+  /* SEARCH */
+  .search-bar { position: relative; margin-bottom: 20px; }
+  .search-bar input { padding-left: 40px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 1rem; pointer-events: none; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--text2); }
+  .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-text { font-size: 1rem; margin-bottom: 6px; }
+  .empty-sub { font-size: 0.85rem; color: var(--text3); }
+
+  /* RELATIONSHIP SECTION in modal */
+  .add-rel-form { background: var(--surface2); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px; }
+  .add-rel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+  /* STATS BAR */
+  .stats-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; flex: 1; min-width: 120px; }
+  .stat-num { font-size: 1.8rem; font-weight: 700; color: var(--accent3); line-height: 1; }
+  .stat-label { font-size: 0.75rem; color: var(--text2); margin-top: 4px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .char-grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .add-rel-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 8px; }
+    .modal-body { padding: 16px; }
+    main { padding: 16px 12px; }
+    .nav-btn { padding: 12px 14px; font-size: 0.8rem; }
+  }
+
+  /* DIVIDER */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* ACCORDION */
+  .accordion-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 12px 0; }
+  .accordion-arrow { transition: transform 0.2s; color: var(--text2); }
+  .accordion-arrow.open { transform: rotate(180deg); }
+  .accordion-body { overflow: hidden; }
+
+  /* CONFLICT BANNER */
+  .info-banner { background: rgba(124,106,247,0.1); border: 1px solid rgba(124,106,247,0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.82rem; color: var(--accent3); margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    Underneath the Surface
+    <span>Novel Tracker</span>
+  </div>
+  <div class="save-indicator">
+    <div class="save-dot"></div>
+    <span id="saveStatus">Auto-saved</span>
+  </div>
+</header>
+
+<nav>
+  <button class="nav-btn active" onclick="showPage('characters')" id="nav-characters">
+    <span class="nav-icon">👤</span> Characters
+  </button>
+  <button class="nav-btn" onclick="showPage('worldbuilding')" id="nav-worldbuilding">
+    <span class="nav-icon">🌍</span> World Building
+  </button>
+  <button class="nav-btn" onclick="showPage('timeline')" id="nav-timeline">
+    <span class="nav-icon">📅</span> Plot Timeline
+  </button>
+</nav>
+
+<main>
+
+  <!-- CHARACTERS PAGE -->
+  <div class="page active" id="page-characters">
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="card-header">
+      <div class="section-title">👤 Characters</div>
+      <button class="btn btn-primary" onclick="openCharModal()">＋ Add Character</button>
+    </div>
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="charSearch" placeholder="Search characters..." oninput="renderCharacters()">
+    </div>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+
+  <!-- WORLDBUILDING PAGE -->
+  <div class="page" id="page-worldbuilding">
+    <div class="section-title">🌍 World Building</div>
+    <div class="world-tabs">
+      <button class="world-tab-btn active" onclick="showWorldPage('apocalypse')" id="wt-apocalypse">☢️ The Apocalypse</button>
+      <button class="world-tab-btn" onclick="showWorldPage('bunker')" id="wt-bunker">🏚️ The Bunker</button>
+      <button class="world-tab-btn" onclick="showWorldPage('outside')" id="wt-outside">🌲 The Outside World</button>
+      <button class="world-tab-btn" onclick="showWorldPage('supernatural')" id="wt-supernatural">👁️ The Supernatural</button>
+    </div>
+    <div id="world-pages"></div>
+  </div>
+
+  <!-- TIMELINE PAGE -->
+  <div class="page" id="page-timeline">
+    <div class="card-header">
+      <div class="section-title">📅 Plot Timeline</div>
+      <button class="btn btn-primary" onclick="openEventModal()">＋ Add Event</button>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+</main>
+
+<!-- CHARACTER MODAL -->
+<div class="modal-overlay hidden" id="charModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="charModalTitle">Add Character</div>
+      <button class="close-btn" onclick="closeCharModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchTab('profile')">Profile</button>
+        <button class="modal-tab" onclick="switchTab('story')">Story</button>
+        <button class="modal-tab" onclick="switchTab('relationships')">Relationships</button>
+      </div>
+      <div class="tab-content active" id="tab-profile">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="f-name" placeholder="Character name">
+          </div>
+          <div class="form-group">
+            <label>Age</label>
+            <input type="text" id="f-age" placeholder="Age or stage (e.g. teen)">
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select id="f-role">
+              <option value="protagonist">Protagonist</option>
+              <option value="supporting">Supporting</option>
+              <option value="antagonist">Antagonist</option>
+              <option value="minor">Minor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Arc Status</label>
+            <select id="f-arc">
+              <option value="not started">Not Started</option>
+              <option value="in progress">In Progress</option>
+              <option value="complete">Complete</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Appearance</label>
+            <textarea id="f-appearance" placeholder="Physical description..."></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Personality</label>
+            <textarea id="f-personality" placeholder="Personality traits..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-story">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Motivation</label>
+            <textarea id="f-motivation" placeholder="What drives them?"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Flaw</label>
+            <textarea id="f-flaw" placeholder="Their greatest flaw..."></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Fear</label>
+            <textarea id="f-fear" placeholder="What do they fear most?"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Backstory</label>
+            <textarea id="f-backstory" placeholder="Background and history..." style="min-height:100px"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>🔒 Private Secrets</label>
+            <div class="secrets-field">
+              <textarea id="f-secrets" class="secrets-input" placeholder="Hidden notes — only visible here..." style="min-height:80px"></textarea>
+            </div>
+            <div style="font-size:0.75rem;color:var(--text3);margin-top:4px;">⚠️ This field is private and stored locally only.</div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-relationships">
+        <div class="info-banner">Relationships are two-way — linking here automatically updates the other character's card.</div>
+        <div class="add-rel-form">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text2);margin-bottom:12px;">Add Relationship</div>
+          <div class="add-rel-grid">
+            <div class="form-group">
+              <label>Character</label>
+              <select id="rel-target"></select>
+            </div>
+            <div class="form-group">
+              <label>Relationship Type</label>
+              <select id="rel-type">
+                <option value="siblings">Siblings</option>
+                <option value="romantic">Romantic</option>
+                <option value="friends">Friends</option>
+                <option value="best friends">Best Friends</option>
+                <option value="enemies">Enemies</option>
+                <option value="hostile then romantic">Hostile → Romantic</option>
+                <option value="mentor">Mentor</option>
+                <option value="guardian">Guardian</option>
+                <option value="acquaintance">Acquaintance</option>
+                <option value="family">Family</option>
+                <option value="rival">Rival</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label>Notes</label>
+            <input type="text" id="rel-notes" placeholder="Any additional notes...">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addRelationship()">Add Relationship</button>
+        </div>
+        <div id="rel-list" class="rel-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCharModal()">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="deleteCharBtn" onclick="deleteCurrentChar()" style="display:none">🗑 Delete</button>
+      <button class="btn btn-primary" onclick="saveCharacter()">💾 Save Character</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT MODAL -->
+<div class="modal-overlay hidden" id="eventModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="eventModalTitle">Add Plot Event</div>
+      <button class="close-btn" onclick="closeEventModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Chapter Number</label>
+          <input type="number" id="e-chapter" placeholder="e.g. 1">
+        </div>
+        <div class="form-group">
+          <label>Day in Story</label>
+          <input type="text" id="e-day" placeholder="e.g. Day 1">
+        </div>
+        <div class="form-group full">
+          <label>Event Summary</label>
+          <textarea id="e-summary" placeholder="What happens in this scene/event?" style="min-height:100px"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Characters Involved</label>
+          <div id="e-chars-checkboxes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;background:var(--surface2);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEventModal()">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="deleteEventBtn" onclick="deleteCurrentEvent()" style="display:none">🗑 Delete</button>
+      <button class="btn btn-primary" onclick="saveEvent()">💾 Save Event</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+let data = {
+  characters: [],
+  worldbuilding: {
+    apocalypse: { title: 'The Apocalypse', icon: '☢️', sections: [] },
+    bunker: { title: 'The Bunker', icon: '🏚️', sections: [] },
+    outside: { title: 'The Outside World', icon: '🌲', sections: [] },
+    supernatural: { title: 'The Supernatural', icon: '👁️', sections: [] }
+  },
+  timeline: []
+};
+
+let editingCharId = null;
+let editingEventId = null;
+let currentModalTab = 'profile';
+let currentWorldPage = 'apocalypse';
+
+// ===== LOCALSTORAGE =====
+function saveData() {
+  localStorage.setItem('uts_novel_data', JSON.stringify(data));
+  const el = document.getElementById('saveStatus');
+  if (el) { el.textContent = 'Saved ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+}
+
+function loadData() {
+  const stored = localStorage.getItem('uts_novel_data');
+  if (stored) {
+    try { data = JSON.parse(stored); } catch(e) { console.log('Load error', e); }
+  } else {
+    loadDefaults();
+  }
+  // Ensure worldbuilding keys exist
+  ['apocalypse','bunker','outside','supernatural'].forEach(k => {
+    if (!data.worldbuilding[k]) {
+      const defaults = { apocalypse:{title:'The Apocalypse',icon:'☢️'}, bunker:{title:'The Bunker',icon:'🏚️'}, outside:{title:'The Outside World',icon:'🌲'}, supernatural:{title:'The Supernatural',icon:'👁️'} };
+      data.worldbuilding[k] = { ...defaults[k], sections: [] };
+    }
+  });
+  if (!data.timeline) data.timeline = [];
+}
+
+// ===== DEFAULTS =====
+function loadDefaults() {
+  const chars = [
+    { id: uid(), name: 'Alex Killian', age: '20', role: 'protagonist', appearance: 'Wild brown curls', personality: 'Sarcastic but deeply loyal', motivation: 'Keep Max safe', flaw: 'Never lets anyone take care of her', fear: 'Losing Max', backstory: "A daddy's girl whose entire identity is built around her father — the man who inadvertently caused the apocalypse. Carries the weight of his legacy while fiercely protecting her little brother.", arc: 'in progress', secrets: '', relationships: [] },
+    { id: uid(), name: 'Max Killian', age: '6', role: 'supporting', appearance: 'Identical looks to Alex — wild brown curls, same eyes', personality: 'Trusting and innocent', motivation: 'Feel safe', flaw: 'Too young to understand danger', fear: 'Being separated from Alex', backstory: "Alex's little brother. His drawings begin displaying supernatural qualities after the group leaves the bunker — a mystery that grows throughout the story.", arc: 'in progress', secrets: '', relationships: [] },
+    { id: uid(), name: 'Steve Hunter', age: 'teen', role: 'supporting', appearance: '', personality: 'Warm and caring at first, becomes controlling and abusive as the story progresses', motivation: '', flaw: 'Possessiveness that curdles into abuse', fear: '', backstory: "Alex's boyfriend. His arc charts a disturbing transformation from protective partner to controlling abuser.", arc: 'not started', secrets: '', relationships: [] },
+    { id: uid(), name: 'Eddie', age: 'teen', role: 'supporting', appearance: '', personality: 'Acts cold and detached but is deeply caring underneath — tells bedtime stories to younger children', motivation: '', flaw: 'Emotional walls, coldness as armour', fear: '', backstory: 'His true nature only emerges slowly. Will fall for Alex; she eventually ends up with him.', arc: 'not started', secrets: '', relationships: [] },
+    { id: uid(), name: 'Cindy', age: 'teen', role: 'supporting', appearance: '', personality: 'Action-oriented and practical', motivation: '', flaw: '', fear: '', backstory: "Alex's best friend. Gets things done.", arc: 'not started', secrets: '', relationships: [] },
+    { id: uid(), name: 'Lauren', age: 'adult', role: 'supporting', appearance: '', personality: 'Calm, steady presence', motivation: '', flaw: '', fear: '', backstory: "Cindy's mom. Emerges as a natural leader figure for the group.", arc: 'not started', secrets: '', relationships: [] },
+    { id: uid(), name: 'Lilly', age: '5', role: 'supporting', appearance: '', personality: 'Quiet, watchful — connects deeply with Max and Eddie', motivation: '', flaw: '', fear: '', backstory: 'Found alone in the bunker. Does not speak. Forms strong non-verbal bonds with Max and Eddie.', arc: 'not started', secrets: '', relationships: [] },
+  ];
+
+  // Map IDs by name for relationship setup
+  const byName = {};
+  chars.forEach(c => byName[c.name] = c.id);
+
+  function addRel(charId, targetId, type, notes='') {
+    const char = chars.find(c => c.id === charId);
+    if (char) char.relationships.push({ targetId, type, notes });
+  }
+
+  // Alex ↔ Max: siblings
+  addRel(byName['Alex Killian'], byName['Max Killian'], 'siblings', '');
+  addRel(byName['Max Killian'], byName['Alex Killian'], 'siblings', '');
+  // Alex ↔ Steve: romantic
+  addRel(byName['Alex Killian'], byName['Steve Hunter'], 'romantic', 'Starts warm; Steve becomes controlling and abusive over time');
+  addRel(byName['Steve Hunter'], byName['Alex Killian'], 'romantic', 'Starts warm; Steve becomes controlling and abusive over time');
+  // Alex ↔ Cindy: best friends
+  addRel(byName['Alex Killian'], byName['Cindy'], 'best friends', '');
+  addRel(byName['Cindy'], byName['Alex Killian'], 'best friends', '');
+  // Alex ↔ Eddie: hostile then romantic
+  addRel(byName['Alex Killian'], byName['Eddie'], 'hostile then romantic', 'Cold hostility that evolves into deep love — she ends up with him');
+  addRel(byName['Eddie'], byName['Alex Killian'], 'hostile then romantic', 'Cold hostility that evolves into deep love — he falls for her');
+  // Alex ↔ Lauren: mentor
+  addRel(byName['Alex Killian'], byName['Lauren'], 'mentor', 'Lauren is a steady maternal figure for Alex');
+  addRel(byName['Lauren'], byName['Alex Killian'], 'mentor', 'Guides and steadies Alex');
+  // Max ↔ Lilly: friends
+  addRel(byName['Max Killian'], byName['Lilly'], 'friends', 'Bond over shared innocence and supernatural sensitivity');
+  addRel(byName['Lilly'], byName['Max Killian'], 'friends', 'Bond over shared innocence and supernatural sensitivity');
+  // Eddie ↔ Lilly: guardian
+  addRel(byName['Eddie'], byName['Lilly'], 'guardian', 'Tells her bedtime stories; protective instinct');
+  addRel(byName['Lilly'], byName['Eddie'], 'guardian', 'He looks after her');
+
+  data.characters = chars;
+
+  // Default world sections
+  data.worldbuilding = {
+    apocalypse: { title: 'The Apocalypse', icon: '☢️', sections: [
+      { id: uid(), title: 'Cause & Origin', content: "Alex's father was responsible for triggering the apocalypse — the exact nature of which is central to the mystery. His actions hang over Alex's identity throughout the story." },
+      { id: uid(), title: 'The World After', content: 'Describe the physical state of the world post-event: infrastructure, environment, dangers, and how long it has been since the apocalypse began.' },
+    ]},
+    bunker: { title: 'The Bunker', icon: '🏚️', sections: [
+      { id: uid(), title: 'Layout & Structure', content: 'Describe the bunker — its rooms, size, resources, how long it has sustained the group, and its emotional atmosphere.' },
+      { id: uid(), title: 'Life Underground', content: 'Daily routines, food supplies, how the group maintains order, morale, and what they do to pass time. Lilly was found here alone.' },
+    ]},
+    outside: { title: 'The Outside World', icon: '🌲', sections: [
+      { id: uid(), title: 'Geography & Landscape', content: 'What does the outside world look like now? Ruins, nature reclaiming space, hazards, weather changes.' },
+      { id: uid(), title: 'Other Survivors', content: 'Are there other groups? Hostile factions, settlements, wanderers. How does the group navigate a world without law?' },
+    ]},
+    supernatural: { title: 'The Supernatural', icon: '👁️', sections: [
+      { id: uid(), title: "Max's Drawings", content: "After leaving the bunker, Max's drawings begin to depict events before they happen — or things happening elsewhere. The mechanism and limits of this ability are yet to be defined." },
+      { id: uid(), title: "Lilly's Silence", content: "Lilly does not speak. Her silence may be trauma — or something more. Her wordless connection to Max and Eddie may be its own form of the supernatural." },
+    ]},
+  };
+
+  data.timeline = [];
+  saveData();
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+}
+
+// ===== NAVIGATION =====
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'characters') renderCharacters();
+  if (name === 'worldbuilding') renderWorldbuilding();
+  if (name === 'timeline') renderTimeline();
+}
+
+// ===== CHARACTERS =====
+function renderCharacters() {
+  const query = (document.getElementById('charSearch')?.value || '').toLowerCase();
+  const filtered = data.characters.filter(c =>
+    c.name.toLowerCase().includes(query) ||
+    (c.personality || '').toLowerCase().includes(query) ||
+    (c.role || '').toLowerCase().includes(query)
+  );
+  const grid = document.getElementById('charGrid');
+  grid.innerHTML = '';
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-text">No characters found</div><div class="empty-sub">Add your first character above</div></div>`;
+  } else {
+    filtered.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'char-card';
+      card.onclick = () => openCharModal(c.id);
+      const initials = c.name.split(' ').map(w => w[0]).join('').toUpperCase().substr(0, 2);
+      const arcClass = 'badge-' + (c.arc || 'not-started').replace(/\s/g, '-');
+      const roleClass = 'badge-' + (c.role || 'minor');
+      const rels = (c.relationships || []);
+      const relHTML = rels.slice(0, 3).map(r => {
+        const t = data.characters.find(x => x.id === r.targetId);
+        const relClass = 'badge-' + r.type.replace(/\s+→\s+/g, '-').replace(/\s+/g, '-');
+        return t ? `<span class="badge ${relClass}" style="font-size:0.68rem">${t.name.split(' ')[0]} · ${r.type}</span>` : '';
+      }).join('');
+      card.innerHTML = `
+        <div class="char-card-header">
+          <div class="char-avatar">${initials}</div>
+          <div class="char-info">
+            <div class="char-name">${c.name}</div>
+            <div class="char-meta">
+              ${c.age ? `<span class="char-age">${c.age}</span>` : ''}
+              <span class="badge ${roleClass}">${c.role}</span>
+              <span class="badge ${arcClass}">${c.arc || 'not started'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="char-body">
+          ${c.personality ? `<div class="char-field"><div class="char-field-label">Personality</div><div class="char-field-value">${c.personality}</div></div>` : ''}
+          ${c.motivation ? `<div class="char-field"><div class="char-field-label">Motivation</div><div class="char-field-value">${c.motivation}</div></div>` : ''}
+          ${c.fear ? `<div class="char-field"><div class="char-field-label">Fear</div><div class="char-field-value">${c.fear}</div></div>` : ''}
+          ${rels.length > 0 ? `<div class="char-field"><div class="char-field-label">Relationships</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${relHTML}${rels.length > 3 ? `<span class="badge badge-minor">+${rels.length-3} more</span>` : ''}</div></div>` : ''}
+        </div>
+        <div class="char-actions">
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openCharModal('${c.id}')">✏️ Edit</button>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+  renderStats();
+}
+
+function renderStats() {
+  const bar = document.getElementById('statsBar');
+  if (!bar) return;
+  const total = data.characters.length;
+  const inProgress = data.characters.filter(c => c.arc === 'in progress').length;
+  const rels = data.characters.reduce((sum, c) => sum + (c.relationships?.length || 0), 0) / 2;
+  bar.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Characters</div></div>
+    <div class="stat-card"><div class="stat-num">${inProgress}</div><div class="stat-label">Active Arcs</div></div>
+    <div class="stat-card"><div class="stat-num">${Math.floor(rels)}</div><div class="stat-label">Relationships</div></div>
+    <div class="stat-card"><div class="stat-num">${data.timeline.length}</div><div class="stat-label">Plot Events</div></div>
+  `;
+}
+
+// ===== CHARACTER MODAL =====
+function openCharModal(id = null) {
+  editingCharId = id;
+  currentModalTab = 'profile';
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector('.modal-tab').classList.add('active');
+  document.getElementById('tab-profile').classList.add('active');
+
+  if (id) {
+    const c = data.characters.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('charModalTitle').textContent = c.name;
+    document.getElementById('f-name').value = c.name || '';
+    document.getElementById('f-age').value = c.age || '';
+    document.getElementById('f-role').value = c.role || 'supporting';
+    document.getElementById('f-arc').value = c.arc || 'not started';
+    document.getElementById('f-appearance').value = c.appearance || '';
+    document.getElementById('f-personality').value = c.personality || '';
+    document.getElementById('f-motivation').value = c.motivation || '';
+    document.getElementById('f-flaw').value = c.flaw || '';
+    document.getElementById('f-fear').value = c.fear || '';
+    document.getElementById('f-backstory').value = c.backstory || '';
+    document.getElementById('f-secrets').value = c.secrets || '';
+    document.getElementById('deleteCharBtn').style.display = 'inline-flex';
+    renderRelList(c);
+    populateRelTarget(id);
+  } else {
+    document.getElementById('charModalTitle').textContent = 'Add Character';
+    ['name','age','appearance','personality','motivation','flaw','fear','backstory','secrets'].forEach(f => document.getElementById('f-'+f).value = '');
+    document.getElementById('f-role').value = 'supporting';
+    document.getElementById('f-arc').value = 'not started';
+    document.getElementById('deleteCharBtn').style.display = 'none';
+    document.getElementById('rel-list').innerHTML = '';
+    populateRelTarget(null);
+  }
+  document.getElementById('charModal').classList.remove('hidden');
+}
+
+function populateRelTarget(excludeId) {
+  const sel = document.getElementById('rel-target');
+  sel.innerHTML = '';
+  data.characters.filter(c => c.id !== excludeId).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    sel.appendChild(opt);
+  });
+  if (!data.characters.filter(c => c.id !== excludeId).length) {
+    sel.innerHTML = '<option value="">No other characters yet</option>';
+  }
+}
+
+function renderRelList(char) {
+  const list = document.getElementById('rel-list');
+  list.innerHTML = '';
+  if (!char.relationships || char.relationships.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:0.85rem;padding:8px">No relationships yet.</div>';
+    return;
+  }
+  char.relationships.forEach((r, idx) => {
+    const t = data.characters.find(x => x.id === r.targetId);
+    const relClass = 'badge-' + r.type.replace(/\s+→\s+/g, '-').replace(/\s+/g, '-');
+    const item = document.createElement('div');
+    item.className = 'rel-item';
+    item.innerHTML = `
+      <span class="badge ${relClass}">${r.type}</span>
+      <span class="rel-name">${t ? t.name : '[Deleted]'}</span>
+      ${r.notes ? `<span class="rel-notes">${r.notes}</span>` : ''}
+      <button class="btn btn-danger btn-sm btn-icon" onclick="removeRelationship('${char.id}', ${idx})">✕</button>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function addRelationship() {
+  if (!editingCharId) { alert('Save the character first, then add relationships.'); return; }
+  const targetId = document.getElementById('rel-target').value;
+  const type = document.getElementById('rel-type').value;
+  const notes = document.getElementById('rel-notes').value;
+  if (!targetId) { alert('Please select a character.'); return; }
+
+  const char = data.characters.find(c => c.id === editingCharId);
+  const target = data.characters.find(c => c.id === targetId);
+  if (!char || !target) return;
+
+  // Avoid duplicates
+  const exists = char.relationships.some(r => r.targetId === targetId);
+  if (exists) { alert('Relationship already exists. Remove it first to change it.'); return; }
+
+  // Two-way link
+  char.relationships.push({ targetId, type, notes });
+  if (!target.relationships.some(r => r.targetId === editingCharId)) {
+    target.relationships.push({ targetId: editingCharId, type, notes });
+  }
+
+  document.getElementById('rel-notes').value = '';
+  saveData();
+  renderRelList(char);
+}
+
+function removeRelationship(charId, idx) {
+  const char = data.characters.find(c => c.id === charId);
+  if (!char) return;
+  const removed = char.relationships[idx];
+  // Remove from both sides
+  char.relationships.splice(idx, 1);
+  const target = data.characters.find(c => c.id === removed.targetId);
+  if (target) {
+    target.relationships = target.relationships.filter(r => r.targetId !== charId);
+  }
+  saveData();
+  renderRelList(char);
+}
+
+function switchTab(tab) {
+  currentModalTab = tab;
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-tab').forEach(t => { if (t.textContent.toLowerCase().trim() === tab || t.getAttribute('onclick')?.includes(tab)) t.classList.add('active'); });
+  document.getElementById('tab-' + tab)?.classList.add('active');
+}
+
+function saveCharacter() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('Please enter a character name.'); return; }
+
+  if (editingCharId) {
+    const char = data.characters.find(c => c.id === editingCharId);
+    if (char) {
+      char.name = name;
+      char.age = document.getElementById('f-age').value;
+      char.role = document.getElementById('f-role').value;
+      char.arc = document.getElementById('f-arc').value;
+      char.appearance = document.getElementById('f-appearance').value;
+      char.personality = document.getElementById('f-personality').value;
+      char.motivation = document.getElementById('f-motivation').value;
+      char.flaw = document.getElementById('f-flaw').value;
+      char.fear = document.getElementById('f-fear').value;
+      char.backstory = document.getElementById('f-backstory').value;
+      char.secrets = document.getElementById('f-secrets').value;
+    }
+  } else {
+    const newChar = {
+      id: uid(), name, age: document.getElementById('f-age').value,
+      role: document.getElementById('f-role').value, arc: document.getElementById('f-arc').value,
+      appearance: document.getElementById('f-appearance').value,
+      personality: document.getElementById('f-personality').value,
+      motivation: document.getElementById('f-motivation').value,
+      flaw: document.getElementById('f-flaw').value,
+      fear: document.getElementById('f-fear').value,
+      backstory: document.getElementById('f-backstory').value,
+      secrets: document.getElementById('f-secrets').value,
+      relationships: []
+    };
+    data.characters.push(newChar);
+    editingCharId = newChar.id;
+    document.getElementById('deleteCharBtn').style.display = 'inline-flex';
+    document.getElementById('charModalTitle').textContent = name;
+    populateRelTarget(editingCharId);
+  }
+  saveData();
+  renderCharacters();
+  closeCharModal();
+}
+
+function deleteCurrentChar() {
+  if (!editingCharId) return;
+  if (!confirm('Delete this character? This cannot be undone.')) return;
+  // Remove from all relationship lists
+  data.characters.forEach(c => {
+    c.relationships = (c.relationships || []).filter(r => r.targetId !== editingCharId);
+  });
+  data.characters = data.characters.filter(c => c.id !== editingCharId);
+  saveData();
+  renderCharacters();
+  closeCharModal();
+}
+
+function closeCharModal() {
+  document.getElementById('charModal').classList.add('hidden');
+  editingCharId = null;
+}
+
+// ===== WORLDBUILDING =====
+function showWorldPage(key) {
+  currentWorldPage = key;
+  document.querySelectorAll('.world-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('wt-' + key)?.classList.add('active');
+  document.querySelectorAll('.world-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('wp-' + key)?.classList.add('active');
+}
+
+function renderWorldbuilding() {
+  const container = document.getElementById('world-pages');
+  container.innerHTML = '';
+  ['apocalypse', 'bunker', 'outside', 'supernatural'].forEach(key => {
+    const wb = data.worldbuilding[key];
+    const div = document.createElement('div');
+    div.className = 'world-page' + (key === currentWorldPage ? ' active' : '');
+    div.id = 'wp-' + key;
+    let sectionsHTML = (wb.sections || []).map((s, i) => `
+      <div class="card" style="margin-bottom:12px" id="ws-${key}-${i}">
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px">
+          <input type="text" value="${escapeHTML(s.title)}" onchange="updateWorldSection('${key}',${i},'title',this.value)" style="font-weight:600;font-size:1rem;flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding:4px 0;color:var(--text)">
+          <button class="btn btn-danger btn-sm" onclick="deleteWorldSection('${key}',${i})">✕</button>
+        </div>
+        <textarea onchange="updateWorldSection('${key}',${i},'content',this.value)" oninput="autoResize(this)" style="width:100%;min-height:100px;background:var(--surface2)">${escapeHTML(s.content)}</textarea>
+      </div>
+    `).join('');
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div style="font-size:1.2rem;font-weight:700;color:var(--accent3)">${wb.icon} ${wb.title}</div>
+        <button class="btn btn-primary btn-sm" onclick="addWorldSection('${key}')">＋ Add Section</button>
+      </div>
+      ${sectionsHTML || '<div class="empty-state"><div class="empty-icon">' + wb.icon + '</div><div class="empty-text">No sections yet</div><div class="empty-sub">Click "Add Section" to start building this world</div></div>'}
+    `;
+    container.appendChild(div);
+  });
+}
+
+function addWorldSection(key) {
+  data.worldbuilding[key].sections.push({ id: uid(), title: 'New Section', content: '' });
+  saveData();
+  renderWorldbuilding();
+  showWorldPage(key);
+}
+
+function updateWorldSection(key, idx, field, val) {
+  if (data.worldbuilding[key].sections[idx]) {
+    data.worldbuilding[key].sections[idx][field] = val;
+    saveData();
+  }
+}
+
+function deleteWorldSection(key, idx) {
+  if (!confirm('Delete this section?')) return;
+  data.worldbuilding[key].sections.splice(idx, 1);
+  saveData();
+  renderWorldbuilding();
+  showWorldPage(key);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+// ===== TIMELINE =====
+function renderTimeline() {
+  const container = document.getElementById('timeline');
+  container.innerHTML = '';
+  const sorted = [...data.timeline].sort((a, b) => (parseFloat(a.chapter) || 0) - (parseFloat(b.chapter) || 0));
+  if (sorted.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">No plot events yet</div><div class="empty-sub">Click "Add Event" to start your timeline</div></div>`;
+    return;
+  }
+  sorted.forEach((ev, i) => {
+    const chars = (ev.characters || []).map(id => {
+      const c = data.characters.find(x => x.id === id);
+      return c ? `<span class="timeline-char-tag">${c.name}</span>` : '';
+    }).join('');
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    item.innerHTML = `
+      <div class="timeline-marker">
+        <div class="timeline-dot">Ch${ev.chapter || '?'}</div>
+        ${i < sorted.length - 1 ? '<div class="timeline-line"></div>' : ''}
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-meta">
+          <span class="timeline-chapter">Chapter ${ev.chapter || '?'}</span>
+          ${ev.day ? `<span class="timeline-day">📅 ${ev.day}</span>` : ''}
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="openEventModal('${ev.id}')">✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">🗑</button>
+          </div>
+        </div>
+        <div class="timeline-summary">${ev.summary || ''}</div>
+        ${chars ? `<div class="timeline-chars">${chars}</div>` : ''}
+      </div>`;
+    container.appendChild(item);
+  });
+}
+
+function openEventModal(id = null) {
+  editingEventId = id;
+  const checkboxes = document.getElementById('e-chars-checkboxes');
+  checkboxes.innerHTML = '';
+  data.characters.forEach(c => {
+    const cb = document.createElement('label');
+    cb.style.display = 'flex';
+    cb.style.alignItems = 'center';
+    cb.style.gap = '6px';
+    cb.style.cursor = 'pointer';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = c.id;
+    input.dataset.charId = c.id;
+    cb.appendChild(input);
+    cb.appendChild(document.createTextNode(c.name));
+    checkboxes.appendChild(cb);
+  });
+
+  if (id) {
+    const ev = data.timeline.find(e => e.id === id);
+    if (!ev) return;
+    document.getElementById('eventModalTitle').textContent = 'Edit Event';
+    document.getElementById('e-chapter').value = ev.chapter || '';
+    document.getElementById('e-day').value = ev.day || '';
+    document.getElementById('e-summary').value = ev.summary || '';
+    document.getElementById('deleteEventBtn').style.display = 'inline-flex';
+    (ev.characters || []).forEach(charId => {
+      const cb = checkboxes.querySelector(`input[value="${charId}"]`);
+      if (cb) cb.checked = true;
+    });
+  } else {
+    document.getElementById('eventModalTitle').textContent = 'Add Plot Event';
+    document.getElementById('e-chapter').value = '';
+    document.getElementById('e-day').value = '';
+    document.getElementById('e-summary').value = '';
+    document.getElementById('deleteEventBtn').style.display = 'none';
+  }
+  document.getElementById('eventModal').classList.remove('hidden');
+}
+
+function saveEvent() {
+  const chapter = document.getElementById('e-chapter').value.trim();
+  const day = document.getElementById('e-day').value.trim();
+  const summary = document.getElementById('e-summary').value.trim();
+  if (!chapter || !summary) { alert('Please fill in Chapter and Event Summary.'); return; }
+
+  const checked = Array.from(document.querySelectorAll('#e-chars-checkboxes input:checked')).map(cb => cb.value);
+
+  if (editingEventId) {
+    const ev = data.timeline.find(e => e.id === editingEventId);
+    if (ev) {
+      ev.chapter = chapter;
+      ev.day = day;
+      ev.summary = summary;
+      ev.characters = checked;
+    }
+  } else {
+    data.timeline.push({ id: uid(), chapter, day, summary, characters: checked });
+  }
+  saveData();
+  renderTimeline();
+  closeEventModal();
+}
+
+function deleteCurrentEvent() {
+  if (!editingEventId) return;
+  if (!confirm('Delete this event?')) return;
+  data.timeline = data.timeline.filter(e => e.id !== editingEventId);
+  saveData();
+  renderTimeline();
+  closeEventModal();
+}
+
+function deleteEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  data.timeline = data.timeline.filter(e => e.id !== id);
+  saveData();
+  renderTimeline();
+}
+
+function closeEventModal() {
+  document.getElementById('eventModal').classList.add('hidden');
+  editingEventId = null;
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===== INIT =====
+loadData();
+renderCharacters();
+</script>
+
+</body>
+</html>
+  
